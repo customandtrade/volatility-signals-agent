@@ -33,6 +33,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
   }, [analysis.metrics]);
 
+  // Calculate average threshold
+  const averageThreshold = useMemo(() => {
+    const metrics = analysis.metrics;
+    const thresholds = [
+      metrics.fear.threshold,
+      metrics.overpricing.threshold,
+      metrics.exhaustion.threshold,
+      metrics.optionsLiquidity.threshold,
+      metrics.tradableStructure.threshold,
+    ];
+    return Math.round(thresholds.reduce((a, b) => a + b, 0) / thresholds.length);
+  }, [analysis.metrics]);
+
   // Calculate passing metrics count
   const passingMetrics = useMemo(() => {
     const metrics = analysis.metrics;
@@ -89,10 +102,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {/* Top Header */}
       <div className="dashboard-header">
         <div className="header-left">
-          <h1 className="symbol">{analysis.symbol}</h1>
+          <h1 className="tradion-brand">TRADION</h1>
           <p className="subtitle">VOLATILITY SIGNALS AGENT</p>
         </div>
         <div className="header-right">
+          <p className="etf-selector-label">Selecciona tu ETF</p>
           <div className="etf-cards">
             {allETFs.map((etf) => (
               <ETFCard
@@ -120,18 +134,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 {priceChange >= 0 ? '↑' : '↓'} {priceChange.toFixed(2)} ({priceChange >= 0 ? '+' : ''}{priceChangePercent.toFixed(2)}%)
               </span>
             </div>
-            <div className="price-info">
-              <span>{currentPrice.toFixed(3)}</span>
-              <span>{marketData.length > 0 ? Math.round(marketData[marketData.length - 1].volume / 1000) : '0'}K</span>
-            </div>
           </div>
 
-          <div className="gauge-container">
-            <CircularGauge
-              value={overallScore}
-              size={200}
-              sublabel={`+${(overallScore - 60).toFixed(2)}%`}
-            />
+          <div className="gauge-section">
+            <p className="gauge-explanation">
+              Score must be above {averageThreshold}%
+            </p>
+            <div className="gauge-container">
+              <CircularGauge
+                value={overallScore}
+                size={200}
+              />
+            </div>
           </div>
 
           <div className="metrics-list">
@@ -270,12 +284,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
           flex: 1;
         }
 
-        .symbol {
-          font-size: 2rem;
+        .tradion-brand {
+          font-size: 2.5rem;
           font-weight: 700;
-          margin: 0 0 0.25rem 0;
           color: #ffffff;
-          letter-spacing: 0.05em;
+          margin: 0 0 0.5rem 0;
+          letter-spacing: 0.1em;
         }
 
         .subtitle {
@@ -289,8 +303,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
         .header-right {
           display: flex;
           flex-direction: column;
-          gap: 1rem;
+          gap: 0.5rem;
           align-items: flex-end;
+        }
+
+        .etf-selector-label {
+          font-size: 0.85rem;
+          font-weight: 600;
+          color: #9ca3af;
+          margin: 0;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
         }
 
         .etf-cards {
@@ -347,19 +370,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
           color: #ef4444;
         }
 
-        .price-info {
+
+        .gauge-section {
           display: flex;
           flex-direction: column;
-          align-items: flex-end;
-          gap: 0.25rem;
-          font-size: 0.9rem;
+          align-items: center;
+          margin: 2rem 0;
+        }
+
+        .gauge-explanation {
+          font-size: 0.85rem;
           color: #9ca3af;
+          margin: 0 0 1rem 0;
+          text-align: center;
         }
 
         .gauge-container {
           display: flex;
           justify-content: center;
-          margin: 2rem 0;
         }
 
         .metrics-list {
