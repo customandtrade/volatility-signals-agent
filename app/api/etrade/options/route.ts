@@ -3,6 +3,8 @@ import { ETradeClient } from '@/services/etrade';
 import fs from 'fs';
 import path from 'path';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Load E*TRADE credentials
  */

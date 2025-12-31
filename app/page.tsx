@@ -9,6 +9,8 @@ import { VolatilitySignalsAgent } from '@/core/agent';
 import { MockETradeClient } from '@/services/etrade';
 import { supabase } from '@/lib/supabase';
 
+export const dynamic = 'force-dynamic';
+
 const AVAILABLE_ETFS = ['TQQQ', 'SQQQ', 'SPY', 'QQQ', 'IWM', 'DIA'];
 
 export default function Home() {
@@ -154,6 +156,7 @@ export default function Home() {
     // Auto-refresh every 30 seconds
     const interval = setInterval(analyzeSymbol, 30000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [symbol, authenticated, useMock, accessToken, accessTokenSecret]);
 
   const handleSymbolChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
