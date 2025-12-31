@@ -14,6 +14,7 @@ export const ETradeAuth: React.FC<ETradeAuthProps> = ({ onAuthenticated, onUseMo
   const [error, setError] = useState<string>('');
   const [requestToken, setRequestToken] = useState<string>('');
   const [requestTokenSecret, setRequestTokenSecret] = useState<string>('');
+  const [isVerifying, setIsVerifying] = useState<boolean>(false);
 
   const handleStartAuth = async () => {
     try {
@@ -46,6 +47,7 @@ export const ETradeAuth: React.FC<ETradeAuthProps> = ({ onAuthenticated, onUseMo
   const handleVerify = async () => {
     try {
       setError('');
+      setIsVerifying(true);
       setStep('verifying');
       
       // Get request token from state or sessionStorage
@@ -128,8 +130,8 @@ export const ETradeAuth: React.FC<ETradeAuthProps> = ({ onAuthenticated, onUseMo
                 onChange={(e) => setVerifier(e.target.value)}
                 placeholder="Enter verification code"
               />
-              <button onClick={handleVerify} disabled={!verifier || step === 'verifying'}>
-                {step === 'verifying' ? 'Verifying...' : 'Verify'}
+              <button onClick={handleVerify} disabled={!verifier || isVerifying}>
+                {isVerifying ? 'Verifying...' : 'Verify'}
               </button>
             </div>
             

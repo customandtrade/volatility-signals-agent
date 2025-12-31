@@ -29,6 +29,7 @@ export default function LoginPage() {
       if (data.user) {
         // Redirect to dashboard
         router.push('/');
+        router.refresh(); // Refresh to update auth state
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred during login');
@@ -94,7 +95,7 @@ export default function LoginPage() {
 
         <div className="auth-footer">
           <p className="register-text">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link href="/signup" className="register-link">
               Register
             </Link>
@@ -119,17 +120,19 @@ export default function LoginPage() {
         .auth-container {
           min-height: 100vh;
           display: flex;
+          align-items: center;
+          justify-content: center;
           background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
           position: relative;
+          padding: 2rem;
         }
 
         .auth-panel {
-          flex: 1;
+          width: 100%;
           max-width: 450px;
           background: #1f2937;
           border-radius: 16px;
           padding: 3rem;
-          margin: 2rem;
           box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
           display: flex;
           flex-direction: column;

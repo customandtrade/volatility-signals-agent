@@ -1,23 +1,65 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { Dashboard } from '@/components/Dashboard';
 import { ETradeAuth } from '@/components/ETradeAuth';
 import { SymbolAnalysis, MarketData, OptionsData } from '@/types/agent';
 import { VolatilitySignalsAgent } from '@/core/agent';
 import { MockETradeClient } from '@/services/etrade';
+import { supabase } from '@/lib/supabase';
 
 const AVAILABLE_ETFS = ['TQQQ', 'SQQQ', 'SPY', 'QQQ', 'IWM', 'DIA'];
 
 export default function Home() {
+  const router = useRouter();
   const [analysis, setAnalysis] = useState<SymbolAnalysis | null>(null);
   const [symbol, setSymbol] = useState('SPY');
   const [loading, setLoading] = useState(true);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  const [userAuthenticated, setUserAuthenticated] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
   const [accessToken, setAccessToken] = useState<string>('');
   const [accessTokenSecret, setAccessTokenSecret] = useState<string>('');
   const [useMock, setUseMock] = useState(true);
   const [currentMarketData, setCurrentMarketData] = useState<MarketData[]>([]);
+
+  // Check if user is authenticated with Supabase
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          setUserAuthenticated(true);
+        } else {
+          // Redirect to login if not authenticated
+          router.push('/login');
+          return;
+        }
+      } catch (error) {
+        console.error('Auth check error:', error);
+        router.push('/login');
+      } finally {
+        setCheckingAuth(false);
+      }
+    };
+
+    checkAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        setUserAuthenticated(true);
+      } else {
+        setUserAuthenticated(false);
+        router.push('/login');
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [router]);
 
   const analyzeSymbol = async () => {
     setLoading(true);
@@ -175,7 +217,51 @@ export default function Home() {
     setAuthenticated(false);
   };
 
-  // Show auth screen if not authenticated and not using mock
+  // Show loading while checking authentication
+  if (checkingAuth) {
+    return (
+      <div className="loading">
+        <div className="spinner" />
+        <p>Checking authentication...</p>
+        <style jsx>{`
+          .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            gap: 1rem;
+          }
+
+          .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+          }
+
+          @keyframes spin {
+            to {
+              transform: rotate(360deg);
+            }
+          }
+
+          p {
+            color: #9ca3af;
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  // Redirect to login if not authenticated (this should not be reached due to useEffect, but just in case)
+  if (!userAuthenticated) {
+    return null; // useEffect will handle redirect
+  }
+
+  // Show E*TRADE auth screen if not authenticated with E*TRADE and not using mock
   if (!authenticated && !useMock) {
     return (
       <div className="app">

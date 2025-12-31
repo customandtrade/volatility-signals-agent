@@ -10,7 +10,6 @@ export default function SignupPage() {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    username: '',
     email: '',
     password: '',
     rememberMe: false,
@@ -27,7 +26,6 @@ export default function SignupPage() {
   };
 
   const generateUsername = () => {
-    if (formData.username) return formData.username;
     // Generate username from first name + random number
     const base = formData.firstName.toLowerCase().replace(/\s/g, '');
     const random = Math.floor(Math.random() * 10000);
@@ -97,21 +95,6 @@ export default function SignupPage() {
                 required
               />
             </div>
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="username">Username (Optional)</label>
-            <input
-              type="text"
-              id="username"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              placeholder="Ninja36, Lucky777, Player360..."
-            />
-            <p className="form-hint">
-              If you don't enter one, it will be generated automatically
-            </p>
           </div>
 
           <div className="form-group">
@@ -188,17 +171,19 @@ export default function SignupPage() {
         .auth-container {
           min-height: 100vh;
           display: flex;
+          align-items: center;
+          justify-content: center;
           background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
           position: relative;
+          padding: 2rem;
         }
 
         .auth-panel {
-          flex: 1;
+          width: 100%;
           max-width: 500px;
           background: #1f2937;
           border-radius: 16px;
           padding: 3rem;
-          margin: 2rem;
           box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
           display: flex;
           flex-direction: column;
@@ -223,6 +208,11 @@ export default function SignupPage() {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 1rem;
+          width: 100%;
+        }
+
+        .form-row .form-group {
+          min-width: 0;
         }
 
         .form-group {
