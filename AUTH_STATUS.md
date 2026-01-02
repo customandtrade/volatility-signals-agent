@@ -117,3 +117,4 @@ Si quieres agregar más funcionalidad:
 - ✅ Seguridad (RLS) configurada
 - ✅ Código listo para producción
 
+

@@ -3,11 +3,15 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Dashboard } from '@/components/Dashboard';
-import { ETradeAuth } from '@/components/ETradeAuth';
 import { SymbolAnalysis, MarketData, OptionsData } from '@/types/agent';
 import { VolatilitySignalsAgent } from '@/core/agent';
-import { MockETradeClient } from '@/services/etrade';
+import { MockETradeClient } from '@/services/mockEtrade';
 import { supabase } from '@/lib/supabase';
+import {
+  mapMassiveMarketToMarketData,
+  mapMassiveOptionsToOptionsData,
+  mapMassiveIVToHistoricalIV,
+} from '@/services/massive-mapper';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,10 +24,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [userAuthenticated, setUserAuthenticated] = useState(false);
-  const [authenticated, setAuthenticated] = useState(false);
-  const [accessToken, setAccessToken] = useState<string>('');
-  const [accessTokenSecret, setAccessTokenSecret] = useState<string>('');
-  const [useMock, setUseMock] = useState(true);
+  // We always use mock data in this project iteration
   const [currentMarketData, setCurrentMarketData] = useState<MarketData[]>([]);
 
   // Check if user is authenticated with Supabase
@@ -71,47 +72,105 @@ export default function Home() {
       let optionsData: OptionsData;
       let historicalIV: number[];
 
-      if (useMock || !authenticated) {
-        // Use mock data
+      // If environment enables Massive, try fetching from our server-side proxy
+      const useMassive = process.env.NEXT_PUBLIC_USE_MASSIVE === 'true';
+
+      if (useMassive) {
+        try {
+          let currentPrice = 0;
+          marketData = []; // Initialize to avoid linting errors
+          
+          // First, try to get market data from Massive API
+          const marketResp = await fetch(`/api/massive/market?symbol=${symbol}`);
+          const marketJson = await marketResp.json();
+          
+          // Check if we got valid market data
+          if (marketResp.ok && !marketJson.fallback) {
+            const results = marketJson?.data?.results || [];
+            if (results.length > 0) {
+              const r = results[0];
+              const price = (r?.last_trade?.price ?? r?.last_trade_price ?? r?.price ?? r?.last ?? r?.close ?? r?.lastPrice) || 0;
+              const volume = r?.volume ?? r?.last_trade?.size ?? r?.session?.volume ?? 0;
+              currentPrice = price;
+              marketData = [{ symbol, price, volume, timestamp: Date.now() }];
+              console.log('✅ Got market data from Massive:', { price, volume });
+            }
+          }
+
+          // Fetch options data from Massive API (this should work with your plan)
+          let rawOptionsData: any = null;
+          const optionsResp = await fetch(`/api/massive/options?symbol=${symbol}`);
+          if (optionsResp.ok) {
+            const optionsJson = await optionsResp.json();
+            rawOptionsData = optionsJson?.data || optionsJson;
+            
+            // Extract underlying price from options if we don't have market data
+            if (currentPrice === 0 && rawOptionsData?.results && Array.isArray(rawOptionsData.results) && rawOptionsData.results.length > 0) {
+              const firstContract = rawOptionsData.results[0];
+              const underlying = firstContract?.underlying_asset;
+              if (underlying?.last_trade?.price) {
+                currentPrice = underlying.last_trade.price;
+                const volume = underlying.session?.volume || 0;
+                marketData = [{ symbol, price: currentPrice, volume, timestamp: Date.now() }];
+                console.log('✅ Extracted underlying price from options:', currentPrice);
+              }
+            }
+            
+            // If still no price, use a default based on symbol
+            if (currentPrice === 0) {
+              const defaultPrices: { [key: string]: number } = {
+                SPY: 500, QQQ: 400, AAPL: 180, MSFT: 400, TSLA: 250,
+              };
+              currentPrice = defaultPrices[symbol] || 100;
+              marketData = [{ symbol, price: currentPrice, volume: 0, timestamp: Date.now() }];
+              console.warn('⚠️ Using default price for', symbol, ':', currentPrice);
+            }
+
+            // Map options data
+            optionsData = mapMassiveOptionsToOptionsData(
+              rawOptionsData,
+              symbol,
+              currentPrice
+            );
+
+            // Extract IV from options contracts (Massive doesn't have historical IV endpoint)
+            const { extractIVFromOptionsContracts } = await import('@/services/massive-mapper');
+            const extractedIVs = extractIVFromOptionsContracts(rawOptionsData);
+            if (extractedIVs.length > 0) {
+              // Use extracted IVs, pad with average if needed for 252 days
+              const avgIV = extractedIVs.reduce((a, b) => a + b, 0) / extractedIVs.length;
+              historicalIV = extractedIVs;
+              // Pad to 252 days with average IV for historical context
+              while (historicalIV.length < 252) {
+                historicalIV.push(avgIV);
+              }
+              console.log('✅ Extracted', extractedIVs.length, 'IV values from options contracts');
+            } else {
+              console.warn('No IV found in options contracts, using mock');
+              historicalIV = MockETradeClient.generateHistoricalIV(252);
+            }
+          } else {
+            console.warn('Massive options API failed, using mock data');
+            marketData = MockETradeClient.generateMarketData(symbol, 50);
+            currentPrice = marketData[marketData.length - 1].price;
+            optionsData = MockETradeClient.generateOptionsData(symbol, currentPrice);
+            historicalIV = MockETradeClient.generateHistoricalIV(252);
+          }
+        } catch (massiveError: any) {
+          console.error('Error fetching from Massive API:', massiveError);
+          // Fallback to mock data on any error
+          marketData = MockETradeClient.generateMarketData(symbol, 50);
+          const currentPrice = marketData[marketData.length - 1].price;
+          optionsData = MockETradeClient.generateOptionsData(symbol, currentPrice);
+          historicalIV = MockETradeClient.generateHistoricalIV(252);
+        }
+      } else {
+        // fallback to mock data
         await new Promise(resolve => setTimeout(resolve, 500));
         marketData = MockETradeClient.generateMarketData(symbol, 50);
         const currentPrice = marketData[marketData.length - 1].price;
         optionsData = MockETradeClient.generateOptionsData(symbol, currentPrice);
         historicalIV = MockETradeClient.generateHistoricalIV(252);
-      } else {
-        // Use real E*TRADE data
-        const marketResponse = await fetch(
-          `/api/etrade/market?symbol=${symbol}&accessToken=${accessToken}&accessTokenSecret=${accessTokenSecret}`
-        );
-        const marketResult = await marketResponse.json();
-        
-        if (!marketResponse.ok) {
-          throw new Error(marketResult.error || 'Failed to fetch market data');
-        }
-
-        marketData = marketResult.historical || [marketResult.current];
-        
-        const optionsResponse = await fetch(
-          `/api/etrade/options?symbol=${symbol}&accessToken=${accessToken}&accessTokenSecret=${accessTokenSecret}`
-        );
-        const optionsResult = await optionsResponse.json();
-        
-        if (!optionsResponse.ok) {
-          throw new Error(optionsResult.error || 'Failed to fetch options data');
-        }
-
-        optionsData = optionsResult;
-
-        const ivResponse = await fetch(
-          `/api/etrade/iv?symbol=${symbol}&days=252&accessToken=${accessToken}&accessTokenSecret=${accessTokenSecret}`
-        );
-        const ivResult = await ivResponse.json();
-        
-        if (!ivResponse.ok) {
-          throw new Error(ivResult.error || 'Failed to fetch IV data');
-        }
-
-        historicalIV = ivResult.iv;
       }
 
       // Run agent analysis
@@ -147,17 +206,13 @@ export default function Home() {
   };
 
   useEffect(() => {
-    if (!authenticated && !useMock) {
-      return; // Wait for authentication
-    }
-
     analyzeSymbol();
 
     // Auto-refresh every 30 seconds
     const interval = setInterval(analyzeSymbol, 30000);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [symbol, authenticated, useMock, accessToken, accessTokenSecret]);
+  }, [symbol]);
 
   const handleSymbolChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSymbol(e.target.value);
@@ -208,18 +263,6 @@ export default function Home() {
     });
   }, [symbol, currentMarketData]);
 
-  const handleAuthenticated = (token: string, secret: string) => {
-    setAccessToken(token);
-    setAccessTokenSecret(secret);
-    setAuthenticated(true);
-    setUseMock(false);
-  };
-
-  const handleUseMock = () => {
-    setUseMock(true);
-    setAuthenticated(false);
-  };
-
   // Show loading while checking authentication
   if (checkingAuth) {
     return (
@@ -264,14 +307,7 @@ export default function Home() {
     return null; // useEffect will handle redirect
   }
 
-  // Show E*TRADE auth screen if not authenticated with E*TRADE and not using mock
-  if (!authenticated && !useMock) {
-    return (
-      <div className="app">
-        <ETradeAuth onAuthenticated={handleAuthenticated} onUseMock={handleUseMock} />
-      </div>
-    );
-  }
+
 
   if (loading || !analysis) {
     return (
@@ -313,6 +349,38 @@ export default function Home() {
 
   return (
     <div className="app">
+      <div style={{
+        position: 'fixed',
+        top: '20px',
+        right: '20px',
+        zIndex: 1000,
+      }}>
+        <a
+          href="/aapl"
+          style={{
+            display: 'inline-block',
+            padding: '12px 24px',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: '#ffffff',
+            textDecoration: 'none',
+            borderRadius: '8px',
+            fontWeight: '600',
+            fontSize: '0.9rem',
+            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
+            transition: 'all 0.3s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 6px 12px rgba(0, 0, 0, 0.4)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.3)';
+          }}
+        >
+          📊 Test AAPL (Massive API)
+        </a>
+      </div>
       <Dashboard 
         analysis={analysis} 
         allETFs={allETFData}

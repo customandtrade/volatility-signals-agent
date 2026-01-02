@@ -89,7 +89,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {/* Top Header */}
       <div className="dashboard-header">
         <div className="header-left">
-          <h1 className="symbol">{analysis.symbol}</h1>
+          <h1 className="brand">TRADION</h1>
           <p className="subtitle">VOLATILITY SIGNALS AGENT</p>
         </div>
         <div className="header-right">
@@ -120,13 +120,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 {priceChange >= 0 ? '↑' : '↓'} {priceChange.toFixed(2)} ({priceChange >= 0 ? '+' : ''}{priceChangePercent.toFixed(2)}%)
               </span>
             </div>
-            <div className="price-info">
-              <span>{currentPrice.toFixed(3)}</span>
-              <span>{marketData.length > 0 ? Math.round(marketData[marketData.length - 1].volume / 1000) : '0'}K</span>
-            </div>
           </div>
 
           <div className="gauge-container">
+            <div className="gauge-note">Score must be above 65%</div>
             <CircularGauge
               value={overallScore}
               size={200}
@@ -270,8 +267,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
           flex: 1;
         }
 
+        .brand {
+          font-size: 2.5rem;
+          font-weight: 800;
+          margin: 0 0 0.25rem 0;
+          color: #ffffff;
+          letter-spacing: 0.05em;
+        }
+
         .symbol {
-          font-size: 2rem;
+          font-size: 1.5rem;
           font-weight: 700;
           margin: 0 0 0.25rem 0;
           color: #ffffff;
@@ -284,6 +289,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
           margin: 0;
           text-transform: uppercase;
           letter-spacing: 0.1em;
+        }
+
+        .gauge-note {
+          font-size: 0.9rem;
+          color: #9ca3af;
+          text-align: center;
+          margin-bottom: 0.5rem;
         }
 
         .header-right {
@@ -358,6 +370,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
         .gauge-container {
           display: flex;
+          flex-direction: column;
+          align-items: center;
           justify-content: center;
           margin: 2rem 0;
         }

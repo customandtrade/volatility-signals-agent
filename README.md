@@ -40,7 +40,7 @@ npm start
 - **Agent State Machine** (`src/core/agent-state.ts`): Determines state transitions
 - **Metrics** (`src/core/metrics/`): Five independent metric calculators
 - **Agent** (`src/core/agent.ts`): Main orchestrator
-- **E*TRADE Client** (`src/services/etrade.ts`): API integration structure
+- **Market Data (Massive)** (`src/services/massive.ts`): API integration structure (using server-side proxy endpoints under `app/api/massive/*`)
 
 ### Signal Rule
 
