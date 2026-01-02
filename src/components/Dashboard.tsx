@@ -102,11 +102,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {/* Top Header */}
       <div className="dashboard-header">
         <div className="header-left">
-<<<<<<< HEAD
           <h1 className="brand">TRADION</h1>
-=======
-          <h1 className="tradion-brand">TRADION</h1>
->>>>>>> ffb77cbeeabec9aea63b68f55b8f16382f3cecac
           <p className="subtitle">VOLATILITY SIGNALS AGENT</p>
         </div>
         <div className="header-right">
@@ -140,26 +136,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
           </div>
 
-<<<<<<< HEAD
           <div className="gauge-container">
-            <div className="gauge-note">Score must be above 65%</div>
+            <div className="gauge-note">Score must be above {averageThreshold}%</div>
             <CircularGauge
               value={overallScore}
               size={200}
               sublabel={`+${(overallScore - 60).toFixed(2)}%`}
             />
-=======
-          <div className="gauge-section">
-            <p className="gauge-explanation">
-              Score must be above {averageThreshold}%
-            </p>
-            <div className="gauge-container">
-              <CircularGauge
-                value={overallScore}
-                size={200}
-              />
-            </div>
->>>>>>> ffb77cbeeabec9aea63b68f55b8f16382f3cecac
           </div>
 
           <div className="metrics-list">
@@ -298,7 +281,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
           flex: 1;
         }
 
-<<<<<<< HEAD
         .brand {
           font-size: 2.5rem;
           font-weight: 800;
@@ -309,14 +291,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
         .symbol {
           font-size: 1.5rem;
-=======
-        .tradion-brand {
-          font-size: 2.5rem;
->>>>>>> ffb77cbeeabec9aea63b68f55b8f16382f3cecac
           font-weight: 700;
+          margin: 0 0 0.25rem 0;
           color: #ffffff;
-          margin: 0 0 0.5rem 0;
-          letter-spacing: 0.1em;
+          letter-spacing: 0.05em;
         }
 
         .subtitle {
