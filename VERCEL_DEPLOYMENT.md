@@ -6,6 +6,10 @@ Para que la aplicación funcione correctamente en Vercel, necesitas configurar l
 
 ### 1. Supabase Variables
 
+1. Ve a tu proyecto en Vercel Dashboard
+2. Click en **Settings** → **Environment Variables**
+3. Agrega las siguientes variables:
+
 ```
 NEXT_PUBLIC_SUPABASE_URL=tu_url_de_supabase
 NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_anon_key
@@ -22,7 +26,7 @@ NEXT_PUBLIC_USE_MASSIVE=true
 - `MASSIVE_API_KEY` es **server-side only** (no se expone al cliente)
 - `NEXT_PUBLIC_USE_MASSIVE` es **client-side** (disponible en el navegador)
 
-### 2. Cómo Agregar Variables en Vercel
+### 3. Cómo Agregar Variables en Vercel
 
 1. Ve a: https://vercel.com/dashboard
 2. Selecciona tu proyecto `volatility-signals-agent`
@@ -35,7 +39,7 @@ NEXT_PUBLIC_USE_MASSIVE=true
    - Click en **Save**
 6. Repite para `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
-### 3. Después de Agregar Variables
+### 4. Después de Agregar Variables
 
 1. Ve a **Deployments**
 2. Click en los tres puntos (⋯) del último deployment
